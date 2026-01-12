@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Company Tree</title>
+    <style>
+      ul {
+        list-style: none;
+        padding-left: 20px;
+        margin: 0;
+      }
+
+      .node {
+        cursor: pointer;
+        font-weight: bold;
+        user-select: none;
+        display: flex;
+        align-items: center;
+      }
+
+      .arrow {
+        display: inline-block;
+        width: 1em;
+        transition: transform 0.3s ease;
+        margin-right: 5px;
+      }
+
+      .expanded-arrow {
+        transform: rotate(90deg);
+      }
+
+      /* плавное раскрытие */
+      .collapsible {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.3s ease;
+      }
+
+      .expanded {
+        max-height: 2000px; /* достаточно для всех элементов */
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Company → Departments → Agents</h2>
+
+    <button id="toggle-all-btn" onclick="toggleAll()">Развернуть всё</button>
+
+    <ul id="tree-root">
+      {% for company in companies %}
+      <li>
+        <span class="node" onclick="toggle(this)">
+          <span class="arrow">▶</span> 🏢 {{ company.name }}
+        </span>
+        <ul class="collapsible" data-id="company-{{ company.id }}">
+          {% for dept in company.departments %}
+          <li>
+            <span class="node" onclick="toggle(this)">
+              <span class="arrow">▶</span> 🏬 {{ dept.name }}
+            </span>
+            <ul class="collapsible" data-id="dept-{{ dept.id }}">
+              {% for agent in dept.agents %}
+              <li>👤 {{ agent.name }}</li>
+              {% endfor %}
+            </ul>
+          </li>
+          {% endfor %}
+        </ul>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <script>
+      const STORAGE_KEY = "tree-nodes"; // ключ localStorage
+
+      // загрузка состояния из localStorage
+      function loadState() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      }
+
+      // сохранение состояния узлов
+      function saveState(state) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      // переключение одного узла
+      function toggle(el) {
+        const next = el.nextElementSibling;
+        if (!next) return;
+
+        next.classList.toggle("expanded");
+
+        // вращаем стрелку
+        const arrow = el.querySelector(".arrow");
+        if (arrow) arrow.classList.toggle("expanded-arrow");
+
+        // сохраняем состояние
+        const id = next.dataset.id;
+        if (id) {
+          const state = loadState();
+          state[id] = next.classList.contains("expanded");
+          saveState(state);
+        }
+      }
+
+      // восстановление состояния при загрузке
+      window.addEventListener("DOMContentLoaded", () => {
+        const state = loadState();
+        const lists = document.querySelectorAll("#tree-root ul.collapsible");
+        lists.forEach((ul) => {
+          const id = ul.dataset.id;
+          if (id && state[id]) {
+            ul.classList.add("expanded");
+            // вращаем стрелку
+            const arrow = ul.previousElementSibling.querySelector(".arrow");
+            if (arrow) arrow.classList.add("expanded-arrow");
+          }
+        });
+      });
+
+      // глобальное разворачивание/сворачивание
+      let allExpanded = false;
+      function toggleAll() {
+        const lists = document.querySelectorAll("#tree-root ul.collapsible");
+        const state = loadState();
+        lists.forEach((ul) => {
+          const arrow = ul.previousElementSibling.querySelector(".arrow");
+          if (allExpanded) {
+            ul.classList.remove("expanded");
+            if (arrow) arrow.classList.remove("expanded-arrow");
+            if (ul.dataset.id) state[ul.dataset.id] = false;
+          } else {
+            ul.classList.add("expanded");
+            if (arrow) arrow.classList.add("expanded-arrow");
+            if (ul.dataset.id) state[ul.dataset.id] = true;
+          }
+        });
+        saveState(state);
+        allExpanded = !allExpanded;
+        document.getElementById("toggle-all-btn").textContent = allExpanded
+          ? "Свернуть всё"
+          : "Развернуть всё";
+      }
+    </script>
+  </body>
+</html>
