@@ -1,115 +1,131 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
     <title>Company Tree</title>
     <style>
-        ul { list-style: none; padding-left: 20px; margin: 0; }
-        .node { cursor: pointer; font-weight: bold; user-select: none; display: flex; align-items: center; }
-        .arrow { display: inline-block; width: 1em; transition: transform 0.3s ease; margin-right: 5px; }
-        .expanded-arrow { transform: rotate(90deg); }
-        .collapsible { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
-        .expanded { max-height: 2000px; }
+      ul {
+        list-style: none;
+        padding-left: 20px;
+        margin: 0;
+      }
+      .node {
+        cursor: pointer;
+        font-weight: bold;
+        user-select: none;
+        display: flex;
+        align-items: center;
+      }
+      .arrow {
+        display: inline-block;
+        width: 1em;
+        transition: transform 0.3s ease;
+        margin-right: 5px;
+      }
+      .expanded-arrow {
+        transform: rotate(90deg);
+      }
+      .collapsible {
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.3s ease;
+      }
+      .expanded {
+        max-height: 2000px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <h2>Company Tree</h2>
 
-<h2>Company Tree</h2>
+    <button id="toggle-all-btn" onclick="toggleAll()">Развернуть всё</button>
 
-<button id="toggle-all-btn" onclick="toggleAll()">Развернуть всё</button>
+    {% macro render_node(node) %}
+    <li>
+      {% if node.children %}
+      <span class="node" onclick="toggle(this)">
+        <span class="arrow">▶</span> {{ node.name }}
+      </span>
+      <ul class="collapsible" data-id="{{ node.id }}">
+        {% for child in node.children %} {{ render_node(child) }} {% endfor %}
+      </ul>
+      {% else %}
+      <span class="node leaf">
+        {% if node.type == "agent" %} 👤 {{ node.name }} {% else %} {{ node.name
+        }} {% endif %}
+      </span>
+      {% endif %}
+    </li>
+    {% endmacro %}
 
-{% macro render_node(node) %}
-<li>
-    {% if node.children %}
-        <span class="node" onclick="toggle(this)">
-            <span class="arrow">▶</span> {{ node.name }}
-        </span>
-        <ul class="collapsible" data-id="{{ node.id }}">
-            {% for child in node.children %}
-                {{ render_node(child) }}
-            {% endfor %}
-        </ul>
-    {% else %}
-        <li>
-            {% if node.type == "agent" %}
-                👤 {{ node.name }}
-            {% else %}
-                {{ node.name }}
-            {% endif %}
-        </li>
-    {% endif %}
-</li>
-{% endmacro %}
+    <ul id="tree-root">
+      {% for company in companies %} {{ render_node(company) }} {% endfor %}
+    </ul>
 
-<ul id="tree-root">
-{% for company in companies %}
-    {{ render_node(company) }}
-{% endfor %}
-</ul>
+    <script>
+      const STORAGE_KEY = "tree-nodes";
 
-<script>
-const STORAGE_KEY = "tree-nodes";
+      function loadState() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      }
 
-function loadState() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-}
+      function saveState(state) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
 
-function saveState(state) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
+      function toggle(el) {
+        const next = el.nextElementSibling;
+        if (!next) return;
 
-function toggle(el) {
-    const next = el.nextElementSibling;
-    if (!next) return;
+        next.classList.toggle("expanded");
 
-    next.classList.toggle("expanded");
+        const arrow = el.querySelector(".arrow");
+        if (arrow) arrow.classList.toggle("expanded-arrow");
 
-    const arrow = el.querySelector(".arrow");
-    if (arrow) arrow.classList.toggle("expanded-arrow");
+        const id = next.dataset.id;
+        if (id) {
+          const state = loadState();
+          state[id] = next.classList.contains("expanded");
+          saveState(state);
+        }
+      }
 
-    const id = next.dataset.id;
-    if (id) {
+      window.addEventListener("DOMContentLoaded", () => {
         const state = loadState();
-        state[id] = next.classList.contains("expanded");
-        saveState(state);
-    }
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-    const state = loadState();
-    const lists = document.querySelectorAll("#tree-root ul.collapsible");
-    lists.forEach(ul => {
-        const id = ul.dataset.id;
-        if (id && state[id]) {
+        const lists = document.querySelectorAll("#tree-root ul.collapsible");
+        lists.forEach((ul) => {
+          const id = ul.dataset.id;
+          if (id && state[id]) {
             ul.classList.add("expanded");
             const arrow = ul.previousElementSibling.querySelector(".arrow");
             if (arrow) arrow.classList.add("expanded-arrow");
-        }
-    });
-});
+          }
+        });
+      });
 
-let allExpanded = false;
-function toggleAll() {
-    const lists = document.querySelectorAll("#tree-root ul.collapsible");
-    const state = loadState();
-    lists.forEach(ul => {
-        const arrow = ul.previousElementSibling.querySelector(".arrow");
-        if (allExpanded) {
+      let allExpanded = false;
+      function toggleAll() {
+        const lists = document.querySelectorAll("#tree-root ul.collapsible");
+        const state = loadState();
+        lists.forEach((ul) => {
+          const arrow = ul.previousElementSibling.querySelector(".arrow");
+          if (allExpanded) {
             ul.classList.remove("expanded");
             if (arrow) arrow.classList.remove("expanded-arrow");
             if (ul.dataset.id) state[ul.dataset.id] = false;
-        } else {
+          } else {
             ul.classList.add("expanded");
             if (arrow) arrow.classList.add("expanded-arrow");
             if (ul.dataset.id) state[ul.dataset.id] = true;
-        }
-    });
-    saveState(state);
-    allExpanded = !allExpanded;
-    document.getElementById("toggle-all-btn").textContent = allExpanded ? "Свернуть всё" : "Развернуть всё";
-}
-</script>
-
-</body>
+          }
+        });
+        saveState(state);
+        allExpanded = !allExpanded;
+        document.getElementById("toggle-all-btn").textContent = allExpanded
+          ? "Свернуть всё"
+          : "Развернуть всё";
+      }
+    </script>
+  </body>
 </html>
