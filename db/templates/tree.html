@@ -52,12 +52,12 @@
     <li>
       {% if node.children %}
       <div class="node">
-        <span class="arrow" onclick="toggleNode('{{ node.id }}', this)">▶</span>
+        <span class="arrow" onclick="toggleNode('{{ node.name_id }}', this)">▶</span>
 
         <span class="label">{{ node.name }}</span>
       </div>
 
-      <ul class="collapsible" data-id="{{ node.id }}">
+      <ul class="collapsible" data-id="{{ node.name_id }}">
         {% for child in node.children %} {{ render_node(child) }} {% endfor %}
       </ul>
       {% else %}

@@ -11,21 +11,24 @@ async def get_tree(session: AsyncSession):
     tree = []
     for c in companies:
         company_node = {
-            "id": f"company-{c.id}",
+            "id": c.id,  # Используем чисто числовой идентификатор
+            "name_id": f"company-{c.id}",
             "name": c.name,
             "type": "office",
             "children": [],
         }
         for d in c.departments:
             dept_node = {
-                "id": f"dept-{d.id}",
+                "id": d.id,  # Аналогично используем числовой идентификатор
+                "name_id": f"dept-{d.id}",
                 "name": d.name,
                 "type": "office",
                 "children": [],
             }
             for a in d.agents:
                 agent_node = {
-                    "id": f"agent-{a.id}",
+                    "id": a.id,  # Чистое числовое значение
+                    "name_id": f"agent-{a.id}",
                     "name": a.name,
                     "type": "agent",
                     "children": [],
